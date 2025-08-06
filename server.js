@@ -1,52 +1,56 @@
 const express = require('express');
 const cors = require('cors');
+const bodyParser = require('body-parser');
 const path = require('path');
 require('dotenv').config();
+
+const Groq = require('groq-sdk');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
+app.use(bodyParser.json());
 
-// Basic error handling for missing environment variables
-if (!process.env.GROQ_API_KEY) {
-  console.error('❌ GROQ_API_KEY is missing from environment variables');
-}
-
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.error('❌ EMAIL_USER or EMAIL_PASS is missing from environment variables');
-}
-
-// Initialize services with error handling
-let groq = null;
-let transporter = null;
-
-try {
-  const Groq = require('groq-sdk');
-  groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-  });
-  console.log('✅ Groq initialized successfully');
-} catch (error) {
-  console.error('❌ Failed to initialize Groq:', error.message);
-}
-
-try {
-  const nodemailer = require('nodemailer');
-  transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+// Serve static files with correct MIME types
+app.use(express.static('public', {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    } else if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html');
     }
-  });
-  console.log('✅ Nodemailer initialized successfully');
-} catch (error) {
-  console.error('❌ Failed to initialize Nodemailer:', error.message);
-}
+  }
+}));
+
+// Specific routes for CSS and JS files (fallback)
+app.get('/style.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css');
+  res.sendFile(path.join(__dirname, 'public', 'style.css'));
+});
+
+app.get('/script.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.sendFile(path.join(__dirname, 'public', 'script.js'));
+});
+
+// Initialize Groq
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
+
+// Initialize Nodemailer
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE || 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // Serve the main HTML file
 app.get('/', (req, res) => {
@@ -55,21 +59,12 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    message: 'Server is running',
-    groq: groq ? 'Connected' : 'Not available',
-    email: transporter ? 'Connected' : 'Not available'
-  });
+  res.json({ status: 'OK', message: 'Server is running' });
 });
 
 // API endpoint to generate email using Groq
 app.post('/api/generate-email', async (req, res) => {
   try {
-    if (!groq) {
-      return res.status(500).json({ error: 'Groq service is not available' });
-    }
-
     const { prompt } = req.body;
     
     if (!prompt) {
@@ -124,10 +119,6 @@ app.post('/api/generate-email', async (req, res) => {
 // API endpoint to send email
 app.post('/api/send-email', async (req, res) => {
   try {
-    if (!transporter) {
-      return res.status(500).json({ error: 'Email service is not available' });
-    }
-
     const { recipients, subject, emailBody } = req.body;
 
     if (!recipients || !subject || !emailBody) {
@@ -169,19 +160,18 @@ app.post('/api/send-email', async (req, res) => {
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error', details: err.message });
+  res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
+// Handle 404 for all other routes
+app.use('*', (req, res) => {
+  console.log('404 - Route not found:', req.originalUrl);
+  res.status(404).json({ error: 'Route not found' });
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
   console.log(`📧 AI Email Sender Application Started`);
-  console.log(`Environment variables loaded:`, {
-    GROQ_API_KEY: process.env.GROQ_API_KEY ? 'Set' : 'Missing',
-    EMAIL_USER: process.env.EMAIL_USER ? 'Set' : 'Missing',
-    EMAIL_PASS: process.env.EMAIL_PASS ? 'Set' : 'Missing',
-    EMAIL_SERVICE: process.env.EMAIL_SERVICE || 'gmail'
-  });
+  console.log(`⚠️  Make sure to configure your .env file with API keys`);
+  console.log(`📁 Serving static files from 'public' directory`);
 });
-
-module.exports = app;
