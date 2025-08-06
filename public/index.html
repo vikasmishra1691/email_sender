@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Sender</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 AI Email Sender</h1>
+            <p>Generate professional emails using AI and send them instantly</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Section -->
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="recipients">Recipients (comma-separated):</label>
+                    <input type="text" id="recipients" placeholder="john@example.com, jane@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="prompt">Email Prompt:</label>
+                    <textarea id="prompt" placeholder="Describe what kind of email you want to generate (e.g., 'Write a professional follow-up email after a job interview')" required></textarea>
+                </div>
+
+                <button id="generateBtn" class="btn btn-primary">
+                    <span class="btn-text">Generate Email</span>
+                    <div class="loading-spinner" style="display: none;"></div>
+                </button>
+            </div>
+
+            <!-- Generated Email Section -->
+            <div id="emailSection" class="email-section" style="display: none;">
+                <h2>Generated Email</h2>
+                
+                <div class="form-group">
+                    <label for="emailSubject">Subject:</label>
+                    <input type="text" id="emailSubject" placeholder="Email subject">
+                </div>
+
+                <div class="form-group">
+                    <label for="emailBody">Email Content:</label>
+                    <textarea id="emailBody" rows="12" placeholder="Generated email content will appear here..."></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button id="sendBtn" class="btn btn-success">
+                        <span class="btn-text">Send Email</span>
+                        <div class="loading-spinner" style="display: none;"></div>
+                    </button>
+                    <button id="regenerateBtn" class="btn btn-secondary">Regenerate</button>
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div id="statusSection" class="status-section" style="display: none;">
+                <div id="statusMessage"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
